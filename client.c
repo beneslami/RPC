@@ -2,9 +2,11 @@
 #include <netdb.h>
 #include <memory.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include "rpc_common.h"
 #include "serialize/serialize.h"
 
@@ -13,19 +15,28 @@ rpc_send_recv(ser_buff_t *client_send_ser_buffer, ser_buff_t *client_recv_ser_bu
   struct sockaddr_in dest;
   int sockfd = 0, rc = 0, recv_size = 0;
   unsigned int addr_len;
+
+  if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+        printf("socket creation failed");
+        exit(EXIT_FAILURE);
+  }
+  memset(&dest, 0, sizeof(struct sockaddr_in));
   dest.sin_family = AF_INET;
   dest.sin_port = htons(SERVER_PORT);
-  struct hostent *host = (struct hostent *)gethostbyname(SERVER_IP);
-  sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-  if(sockfd == -1){
-    printf("socket creation failed\n");
-    exit(-1);
+  dest.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+  if (connect(sockfd, (const struct sockaddr *) &dest, sizeof(struct sockaddr_in)) == -1) {
+        fprintf(stderr, "The server is down.\n");
+        exit(1);
   }
-  rc = sendto(sockfd, client_send_ser_buffer->b, get_serialize_buffer_length(client_send_ser_buffer), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+
+  rc = send(sockfd, (char*)client_send_ser_buffer->b, get_serialize_buffer_length(client_send_ser_buffer), 0);
   printf("%s() : %d bytes sent\n", __FUNCTION__, rc);
 
-  recv_size = recvfrom(sockfd, client_recv_ser_buffer->b, get_serialize_buffer_length(client_recv_ser_buffer), 0, (struct sockaddr*)&dest, &addr_len);
+  recv_size = recv(sockfd, (char*)client_recv_ser_buffer->b, 8, 0);
   printf("%s() : %d bytes received\n", __FUNCTION__, recv_size);
+
+  close(sockfd);
 }
 
 ser_buff_t
@@ -34,6 +45,7 @@ ser_buff_t
   init_serialized_buffer_of_defined_size(&client_send_ser_buffer, MAX_RECV_SEND_BUFF_SIZE);
   serialize_data(client_send_ser_buffer, (char*)&a, sizeof(int));
   serialize_data(client_send_ser_buffer, (char*)&b, sizeof(int));
+
   return client_send_ser_buffer;
 }
 

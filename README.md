@@ -39,3 +39,6 @@ In server side, ```server_stub_unmarshall()``` is responsible for reconstructing
 Big picture for implementing phase 2:
 
 ![picture](data/RPC_bigPicture2.png)
+
+
+Note: At first, I tried to implement via UDP socket. But as I am on Mac OSX, I think recvfrom() system call is non-blocking. So, I preferred to use TCP socket, as the main purpose of this project is to understand what RPC is.

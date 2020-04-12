@@ -30,4 +30,12 @@ void rpc_send_recv(ser_buff_t *send_ser_data, ser_buff_t *empty_ser_buffer);
 the value ```send_ser_data``` is the output of the ```multiply_client_stub_marshal()``` and ```empty_ser_buffer``` is the value which will be received from the server as the output. While client has not received the result, it will be blocked in this function. Big picture for implementing phase 1:
 ![picture](data/RPC_bigPicture.png)
 
+In server side, ```server_stub_unmarshall()``` is responsible for reconstructing arguments received from the client. As you can see, the signature of the function should be like below:
+```
+<rpc_return_type> server_stub_unmarshall(ser_buff_t *);
+```
+![picture](data/RPC_server1.png)
+
 Big picture for implementing phase 2:
+
+![picture](data/RPC_bigPicture2.png)

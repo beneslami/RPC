@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "rpc_common.h"
-
+ 
 ser_buff_t *multiply_client_stub_marshal(int a, int b){
   ser_buff_t *client_send_ser_buffer = NULL;
   init_serialized_buffer_of_defined_size(&client_send_ser_buffer, MAX_RECV_SEND_BUFF_SIZE);

@@ -4,13 +4,6 @@
 #include <string.h>
 #include <assert.h>
 
-struct ser_buff_ {
-  #define SERIALIZE_BUFFER_DEFAULT_SIZE 512
-  void *b;
-  int size;
-  int next;
-};
-
 void
 init_serialized_buffer(ser_buff_t **b){
   (*b) = (ser_buff_t*)calloc(1, sizeof(ser_buff_t));

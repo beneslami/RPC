@@ -1,7 +1,12 @@
 #ifndef SERIALIZE_H
 #define SERIALIZE_H
 
-typedef struct ser_buff_ ser_buff_t; /* opaque Data Structure */
+typedef struct ser_buff_{
+  #define SERIALIZE_BUFFER_DEFAULT_SIZE 512
+  void *b;
+  int size;
+  int next;
+}ser_buff_t;
 
 void init_serialized_buffer(ser_buff_t **b);
 void init_serialized_buffer_of_defined_size(ser_buff_t **b, int size);

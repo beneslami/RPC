@@ -5,8 +5,10 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "rpc_common.h"
- 
-ser_buff_t *multiply_client_stub_marshal(int a, int b){
+#include "serialize/serialize.h"
+
+ser_buff_t
+*multiply_client_stub_marshal(int a, int b){
   ser_buff_t *client_send_ser_buffer = NULL;
   init_serialized_buffer_of_defined_size(&client_send_ser_buffer, MAX_RECV_SEND_BUFF_SIZE);
   serialize_data(client_send_ser_buffer, (char*)&a, sizeof(int));
@@ -14,7 +16,15 @@ ser_buff_t *multiply_client_stub_marshal(int a, int b){
   return client_send_ser_buffer;
 }
 
-void rpc_send_recv(ser_buff_t* client_send_ser_buffer, ser_buff_t* client_recv_ser_buffer){
+int
+multiply_client_stub_unmarshal(ser_buff_t *client_recv_ser_buffer){
+  int res;
+  de_serialize_data((char*)&res, client_recv_ser_buffer, sizeof(int));
+  return res;
+}
+
+void
+rpc_send_recv(ser_buff_t* client_send_ser_buffer, ser_buff_t* client_recv_ser_buffer){
   struct sockaddr_in dest;
   int sockfd = 0, rc = 0, recv_size = 0;
   int addr_len;
@@ -26,11 +36,15 @@ void rpc_send_recv(ser_buff_t* client_send_ser_buffer, ser_buff_t* client_recv_s
     printf("socket creation failed\n");
     return -1;
   }
-  rc = sendto(sockfd, client_send_ser_buffer->b, get_serialize_buffer_data_size(client_send_ser_buffer), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
+  rc = sendto(sockfd, client_send_ser_buffer->b, get_serialize_buffer_length(client_send_ser_buffer), 0, (struct sockaddr *)&dest, sizeof(struct sockaddr));
   printf("%s() : %d bytes sent\n", __FUNCTION__, rc);
+
+  recv_size = recvfrom(sockfd, client_recv_ser_buffer->b, get_serialize_buffer_length(client_recv_ser_buffer), 0, (struct sockaddr*)&dest, &addr_len);
+  printf("%s() : %d bytes received\n", __FUNCTION__, recv_size);
 }
 
-int multiply_rpc(int a, int b){
+int
+multiply_rpc(int a, int b){
   /* step 2: serializing/marshaling the arguments */
   ser_buff_t *client_send_ser_buffer = multiply_client_stub_marshal(a, b);
   ser_buff_t *client_recv_ser_buffer = NULL;
@@ -41,9 +55,16 @@ int multiply_rpc(int a, int b){
   rpc_send_recv(client_send_ser_buffer, client_recv_ser_buffer);
   free_serialize_buffer(client_send_ser_buffer);
   client_send_ser_buffer = NULL;
+
+  /* step 9: un-marshal the received serialized buffer. And reconstruct the RPC return type*/
+  int res = multiply_client_stub_unmarshal(client_recv_ser_buffer);
+
+  free_serialize_buffer(client_recv_ser_buffer);
+  return res;
 }
 
-int main(int argc, char **argv){
+int
+main(int argc, char **argv){
   int a, b;
   printf("Enter the first number:\n");
   scanf("%d", &a);

@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include "rpc_common.h"
+#include "serialize/serialize.h"
 
 int multiply(int a, int b){
   return a + b;
@@ -69,7 +70,7 @@ main(int argc, char **argv){
   while(1){
     reset_serialize_buffer(server_recv_ser_buffer);
     /* step 4: receive the data from client in local buffer */
-    len = recvfrom(sockfd, server_recv_ser_buffer->b, get_serialize_buffer_data_size(server_recv_ser_buffer), 0, (struct sockaddr*)&client_addr, &addr_len);
+    len = recvfrom(sockfd, server_recv_ser_buffer->b, get_serialize_buffer_length(server_recv_ser_buffer), 0, (struct sockaddr*)&client_addr, &addr_len);
     printf("number of bytes received from the client = %d\n", len);
 
     reset_serialize_buffer(server_send_ser_buffer);

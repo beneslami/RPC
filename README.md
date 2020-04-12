@@ -7,11 +7,25 @@ The entire RPC mechanism can be divided into 9 steps:
 1. Client program invokes the RPC with arguments.
 2. Client program converts the arguments into serialized form of data.(Data Serialization/ Marshaling)
 3. Client program ships the serialized data over the network to RPC server.
----(client side)---
+---(phase one: client side)---
 4. RPC server receives the serialized data obtained in step 3 from client.
 5. RPC server un-marshales the data received in step 4.(De-Serialization)
 6. RPC server invokes the actual procedure with arguments.
 7. RPC server has to perform serialization of the result.(Data Serialization/ Marshaling)
 8. RPC server sends the serialized result back to the client.
----(server side)---
-9. client un-marshales the received serialized result. 
+---(phase 2: server side)---
+9. client un-marshales the received serialized result.
+---(phase 3: client side)---
+
+## Phase 1
+As you can see below, in client side there is a function to serialize the input argument.
+![picture](data/RPC_function.png)
+* signature: ```ser_buff_t *multiply_client_stub_marshal(arg1, arg2, ...)```
+* this function is responsible for serializing the arguments of the the RPC.
+
+There is another important function in client which is responsible for sending and receiving serialized buffer is:
+```
+void rpc_send_recv(ser_buff_t *send_ser_data, ser_buff_t *empty_ser_buffer);
+```
+the value ```send_ser_data``` is the output of the ```multiply_client_stub_marshal()``` and ```empty_ser_buffer``` is the value which will be received from the server as the output. While client has not received the result, it will be blocked in this function. Big picture:
+![picture](data/RPC_bigPicture.png)

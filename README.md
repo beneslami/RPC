@@ -27,5 +27,7 @@ There is another important function in client which is responsible for sending a
 ```
 void rpc_send_recv(ser_buff_t *send_ser_data, ser_buff_t *empty_ser_buffer);
 ```
-the value ```send_ser_data``` is the output of the ```multiply_client_stub_marshal()``` and ```empty_ser_buffer``` is the value which will be received from the server as the output. While client has not received the result, it will be blocked in this function. Big picture:
+the value ```send_ser_data``` is the output of the ```multiply_client_stub_marshal()``` and ```empty_ser_buffer``` is the value which will be received from the server as the output. While client has not received the result, it will be blocked in this function. Big picture for implementing phase 1:
 ![picture](data/RPC_bigPicture.png)
+
+Big picture for implementing phase 2:

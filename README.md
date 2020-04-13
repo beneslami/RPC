@@ -40,5 +40,19 @@ Big picture for implementing phase 2:
 
 ![picture](data/RPC_bigPicture2.png)
 
+### RPC Identity
+
+In larger project, there are several remote functions and it is the responsibility of the client to determine the destination function alongside of serialized arguments. hence, according to below picture, the client must add a header to determine the remote function.
+
+![picture](data/Identity.png)
+
+This header should contain information about RPC Id. So the general structure of the header should be like the following code:
+```
+typedef struct rpc_hdr_{
+  uint rpc_id;       // id of the remote function in which the client is interested
+  uint payload_size; // length of the Serialized Arguments (red part)
+}
+```
+It is the responsibility of the server to publicly announces remote procedure Ids.
 
 Note: At first, I tried to implement via UDP socket. But as I am on Mac OSX, I think recvfrom() system call is non-blocking. So, I preferred to use TCP socket, as the main purpose of this project is to understand what RPC is.

@@ -23,3 +23,34 @@ eRPC by limiting the window size to 19KB with 12MB of intermediate switch buffer
 
 ### 2) Low overhead transport layer
 Many transport layer components like end 2 end reliability, congestion control and memory management are quite expensive, but this paper has found that most of the overhead can be avoided in the common case. in eRPC, it is assumed that the datacenter network is uncongested, therefore, eRPC implementation is optimized for uncongested networks. There, it uses Timely algorithm to control congestion that is, if RTT is high, then TX_Rate will decrease and vice versa.
+
+
+### High-performance Networking
+Modern datacenters are very fast, as we see 100Gbps datacenters with latency of 2microseconds between two hosts connected to the same switch, and switches add around 300nanosecond per hop. The problem in high-performance datacenter network is that existing networking options are trying to either sacrifice performance or generality. On the slow hand, we have TCP, gRPC, etc. which work in commodity datacenters and provide features needed to build applications like reliability and congestion control, but they are slow. On the other hand, there are fast but specialized options like DPDK and RDMA which make simplifying assumptions, while requires special hardware. One of the drawback in this field is limited applicability, which means specialized hardware is needed to run them. But more fundamental drawback is that these systems co-design the application logic with the networking, and as a result, they lag modular networking abstraction which prevents reuse. These specialized technologies were deployed with the belief that placing their functionality in the network will yield a large performance gain. But in \cite{eRPC} it is shown that a general purpose RPC can provide state-of-the-art performance on commodity datacenter networks without additional networks support. Generally, Remote Procedure Call (RPC) is not technically a protocol, but it is better thought of as a general mechanism for structuring distributed systems. RPC is popular because it is based on the semantics of a local procedure call. An application developer can be largely unaware of whether the procedure is local or remote.
+
+![picture](data/rpc.png)
+
+In spite of the fact that RPC brings transparency to the applications, it has several disadvantages:
+\being{itemize}
+\item RPC Passes Parameters by values only and pointer values are not allowed.
+\item This mechanism is highly vulnerable to failure as it involves a communication system, another machine, and another process.
+\item RPC concept can be implemented in different ways, implying that there is no specific standard.
+\item RPC increases the cost of the process.
+\end{itemize}
+
+eRPC is a fast and general remote procedure call for datacenters. The reason for using eRPC for communication is to implement high-performance system with minimum alteration in hardware. For example, in order to have performance, RDMA is used instead of traditional TCP/IP stack. eRPC claims that it can propose system performance comparable to RDMA-based systems only by using traditional system softwares even in lossy environment such as ethernet. eRPC is optimized for common-case scenarios, so it is considered a general purpose communication system. As a result, researchers in \cite{eRPC} believe it can also be optimized for special use cases. eRPC implements RPCs on top of Transport Layer that provides basic unreliable packet I/O, such as UDP.
+eRPC breaks away from this performance generality trade-off by providing both, that is **do not give up generality for high performance**.
+![picture](data/general.png)
+ To do so, \cite{eRPC} have to provide functionality equivalent to hardware solutions in software. For example, if the network is lossy, there should be mechanisms to prevent packet loss, also end-to-end reliability and congestion control with low overhead, all in the software and without loosing performance.
+
+One problem in managing packet loss is **large timeouts**. When the drain rate is smaller than receiving rate, there will be packet loss. When this happens, the switch buffer starts filling up and when it is full, it starts dropping packets. Because the sender get no feedback from the network, it does not know when it is safe to retransmit, so they use conservative approach for re-transmission which is in the order of miliseconds. Large timeouts are also bad because they increase latency. For example, we're building a distributed system where clients hold locks on a remote object, if a client's unlock packets get dropped, the locked object still is locked for several miliseconds. As a result, contending requests from other clients will be failed, which leads to low performance. The prior solution for this problem was lossless link layer(PFC, Infiniband). In a lossless datacenter, before switch buffer fills up, the switch sends a feedback to the sender in a form of pause message, telling it to stop. So, in lossless datacenters, there is no need for retransmission.
+
+The approach which eRPC takes to solve abovementioned problems is that the researchers made an observation about normal datacenter networks that allows a simple method of preventing packet loss most of the time. Note that, there is no need to completely eliminate the packet loss. That is an extreme requirement which comes with drawbacks. what is needed for packet loss is to be rare enough not to affect the system performance, and this contribution has found that with a little help from software, existing network can satisfy this requirement.
+
+There is a parameter which is called **Bandwidth Delay Product (BDP)** denotes the maximum size of sliding window to reach peak rate with available bandwidth:
+```
+BDP = Bandwidth * RTT
+```
+giving this information, in contrast, in datacenter switches, there are around 12MB of buffer, which is 3 orders of magnitude larger than BDP\cite{eRPC}. So, if software is limited to the amount of BDP, then switch can buffer hundreds of loads and prevents packet loss. So, this observation lets researchers to work on low latency NICs. eRPC by limiting the window size to 19KB with 12MB of intermediate switch buffer, can achieve 640 nodes in many to one traffic pattern.
+
+Many transport layer components like end-2-end reliability, congestion control and memory management are quite expensive, but researchers have found that most of the overhead can be avoided in the common case\cite{eRPC}. in eRPC, it is assumed that the datacenter network is uncongested, therefore, eRPC implementation is optimized for uncongested networks. There, it uses Timely algorithm to control congestion that is, if RTT is high, then TX_Rate will decrease and vice versa.
